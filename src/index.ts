@@ -1,8 +1,11 @@
 import express from "express";
 import logger from "winston";
 import introduction from "./controllers/introduction";
+import validate from "./routes/validate";
 
 const app = express();
+
+app.use("/", validate);
 
 // ROUTES
 app.get("/", introduction);
