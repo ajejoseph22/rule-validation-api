@@ -38,7 +38,7 @@ app.use(urlencoded({ extended: true }));
 app.get("/", introduction);
 app.use("/validate-rule", validate);
 
-app.listen(3000, () => {
+app.listen(process.env.PORT || 3000, () => {
   logger.info("App successfully started");
 });
 
