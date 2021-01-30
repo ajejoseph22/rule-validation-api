@@ -6,6 +6,8 @@
     "typeRoots": [
       "./src/typings", "./node_modules/@types"],
     "esModuleInterop": true,
+    "inlineSources": true,
+    "sourceMap": true,
     "outDir": "dist",
     "types": ["node"]
   },

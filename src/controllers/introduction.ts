@@ -10,7 +10,6 @@ export default (req: Request, res: Response) => {
       github: "@ajejoseph22",
       email: "ajejoseph22@gmail.com",
       mobile: "08131112930",
-      twitter: "None",
     },
   };
   res.json(responseObject);

@@ -3,7 +3,6 @@ export interface IntroductoryObjectData {
   github: string;
   email: string;
   mobile: string;
-  twitter: string;
 }
 
 export interface IntroductoryObject {
