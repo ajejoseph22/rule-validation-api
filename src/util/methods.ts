@@ -7,11 +7,14 @@ import { Response } from "express";
 import { DataType } from "../enums/data-type";
 import { Condition } from "../enums/condition";
 import { ValidationObject } from "../types/response-data";
+import ErrorResponse from "../types/error-response";
 
 // ERRORS
 const isMissingError = (field: string, data: string) =>
   `field ${field} is missing from ${data}.`;
+
 const requiredError = (property: Property) => `${property} is required.`;
+
 const wrongTypeError = (property: Property) =>
   `${property} should be ${ArticleMap[property]} ${
     !Array.isArray(propertyTypeMap[property])
@@ -30,22 +33,18 @@ const wrongTypeError = (property: Property) =>
   }.`;
 
 // HELPERS
-const getType = (data: any) => {
+const isObject = (variable: any): boolean => {
+  return Object.prototype.toString.call(variable) === "[object Object]";
+};
+
+const isUndefined = (property: any): boolean => property === undefined;
+
+const getType = (data: any): DataType | undefined => {
   if (isObject(data)) return DataType.Object;
   if (Array.isArray(data)) return DataType.Array;
   if (typeof data === DataType.String) return DataType.String;
 };
-const isCorrectType = (value: any, property: Property): boolean => {
-  if (property === Property.Rule) {
-    return isObject(value);
-  }
 
-  return propertyTypeMap[property].includes(typeof value);
-};
-const isObject = (variable: any) => {
-  return Object.prototype.toString.call(variable) === "[object Object]";
-};
-const isUndefined = (property: any) => property === undefined;
 const generateLeftOverString = (
   nestedPropertiesArray: string[],
   index: number
@@ -58,32 +57,42 @@ const generateLeftOverString = (
     }, "");
 };
 
-const validate = (rule: Rule, data: TreeData): void => {
-  // RULE
-  if (isUndefined(rule)) throw new Error(requiredError(Property.Rule));
-  if (!isCorrectType(rule, Property.Rule))
-    throw new Error(wrongTypeError(Property.Rule));
+const verifyIfExists = (value: any, property: Property): void => {
+  if (isUndefined(value)) throw new Error(requiredError(property));
+};
 
-  // DATA
-  if (isUndefined(data)) throw new Error(requiredError(Property.Data));
-  if (!getType(data)) throw new Error(wrongTypeError(Property.Data));
+const verifyCorrectType = (value: any, property: Property): void => {
+  let isCorrectType;
+  if (property === Property.Rule) {
+    isCorrectType = isObject(value);
+  } else if (property === Property.Data) {
+    isCorrectType = !!getType(value);
+  } else {
+    isCorrectType = propertyTypeMap[property].includes(typeof value);
+  }
+
+  if (!isCorrectType) throw new Error(wrongTypeError(property));
+};
+
+const verifyIfExistsAndIsCorrectType = (
+  value: any,
+  property: Property
+): void => {
+  verifyIfExists(value, property);
+  verifyCorrectType(value, property);
+};
+
+const validate = (rule: Rule, data: TreeData): void => {
+  verifyIfExistsAndIsCorrectType(rule, Property.Rule);
+  verifyIfExistsAndIsCorrectType(data, Property.Data);
 
   const { condition, condition_value, field } = rule;
 
-  // FIELD
-  if (isUndefined(field)) throw new Error(requiredError(Property.Field));
-  if (!isCorrectType(field, Property.Field))
-    throw new Error(wrongTypeError(Property.Field));
+  verifyIfExistsAndIsCorrectType(field, Property.Field);
+  verifyIfExistsAndIsCorrectType(condition, Property.Condition);
 
-  // CONDITION
-  if (isUndefined(condition))
-    throw new Error(requiredError(Property.Condition));
-  if (!isCorrectType(condition, Property.Condition))
-    throw new Error(wrongTypeError(Property.Condition));
-
-  // CONDITION VALUE
-  if (isUndefined(condition_value))
-    throw new Error(requiredError(Property.ConditionValue));
+  // CONDITION VALUE CAN BE ANY TYPE, SO WE JUST CHECK THAT IT EXISTS
+  verifyIfExists(condition_value, Property.ConditionValue);
 };
 
 export const successResponse = (
@@ -111,7 +120,7 @@ export const successResponse = (
 export const errorResponse = (
   message: string,
   data: ValidationObject | null = null
-) => ({
+): ErrorResponse => ({
   message,
   status: "error",
   data,
@@ -182,9 +191,8 @@ export const process = (treeObject: TreeObject, res: Response): void => {
   const nestedFieldsArray = field.split(".");
 
   const fieldValue = getFieldValue(nestedFieldsArray, data, field);
-  const result = compare(fieldValue, condition, condition_value);
 
-  result
+  compare(fieldValue, condition, condition_value)
     ? res.json(
         successResponse(
           `field ${field} successfully validated.`,

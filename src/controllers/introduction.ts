@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { IntroductoryObject } from "../types/introductory-object";
 
 export default (req: Request, res: Response) => {
-  const responseObject: IntroductoryObject = {
+  res.json({
     message: "My Rule-Validation API",
     status: "success",
     data: {
@@ -11,6 +11,5 @@ export default (req: Request, res: Response) => {
       email: "ajejoseph22@gmail.com",
       mobile: "08131112930",
     },
-  };
-  res.json(responseObject);
+  } as IntroductoryObject);
 };
